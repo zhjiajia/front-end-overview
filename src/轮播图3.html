@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body{
+            margin: 0;
+            padding: 0;
+        }
+        .carousel{
+            width: 100%;
+            height: 33.3vw;
+            position: relative;
+            left: 0;
+            top: 0;
+            font-size: 0;
+            min-width: 1000px;
+            overflow: hidden;
+        }
+        .carousel>.img-con{
+            width: 200%;
+            height: 100%;
+            position: absolute;
+            left: 0;
+        }
+        .carousel .img-block{
+            width: 50%;
+            height: 100%;
+            position: relative;
+            float: left;
+            
+        }
+        .carousel .img-block>img{
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+        .carousel .img-block>div{
+            position: absolute;
+            left:10vw;
+            top: 2vw;
+            font-size: 20px;
+            color: white;
+        }
+        .carousel .img-block>div>span>i{
+            font-style:normal;
+            font-size: 28px;
+        }
+        .carousel .img-block>div>h1{
+            font-size: 20px;
+        }
+        .clear::after
+        {
+            content: "";
+            display: block;
+            visibility: hidden;
+            height: 0;
+            overflow: hidden;
+            clear: both;
+        }
+
+        ul{
+            list-style: none;
+            position: absolute;
+            bottom: 3vw;
+            left: 50%;
+            transform: translate(-50%,0);
+        }
+        ul li{
+            width: 1.6vw;
+            height: 1.6vw;
+            border:2px solid red;
+            margin-left: 1.3vw;
+            float: left;
+            border-radius: 1.6vw;
+            
+        }
+        .left,.right{
+            position: absolute;
+            top: 50%;
+            transform: translate(0,-50%);
+        }
+        .left{
+            left: 3vw;
+        }
+
+        .right{
+            right: 3vw;
+        }
+    </style>
+</head>
+<body> 
+    <script>
+        const LEFT=Symbol("LEFT"),RIGHT=Symbol("RIGHT"),MAX_TIME=200;
+        var arr=[
+            {id:1001,img:"./img/a.jpg",date:"28/Jul/2022",info:"与父母的47天自驾游｜向疆而行2万里，我们依旧是过客"},
+            {id:1002,img:"./img/b.jpg",date:"27/Jul/2022",info:"自驾川西小环线，在千碉之国遇见梨花如雪的季节"}],
+        pos=0,           // 即将跳转到的位置
+        x=0,
+        isPlaying=false,      // 此值为true则说明正在播放动画
+        playSpeed=50,
+        direction=LEFT,
+        isAuto=true,
+        time=MAX_TIME,
+        imgBlockList={};       // 将图片的id属性作为key 将图片作为value 存入此处
+        var imgCon,         // 设置该标签为容器  用于存放每张轮播
+        prev;   
+
+        init();
+        function init(){
+            var carousel=document.createElement("div");
+            carousel.className="carousel";
+            carousel.innerHTML=`
+                <div class='img-con'></div>
+                <ul>${arr.reduce(t=>t+"<li></li>","")}</ul>
+                <img src='./img/left.png' class='left'>
+                <img src='./img/right.png' class='right'>    
+            `
+            imgCon=carousel.querySelector(".img-con");
+            imgCon.appendChild(getImgBlock(arr[0]));     //先默认放入第一张图片
+            carousel.addEventListener("click",clickHandler);  //事件委托
+            carousel.addEventListener("mouseenter",mouseHandler)
+            carousel.addEventListener("mouseleave",mouseHandler)
+            changePrev();
+            document.body.appendChild(carousel);
+            animation();
+        }
+
+        function mouseHandler(e){
+            isAuto=e.type==="mouseleave";  // 鼠标离开 自动轮播
+            time=MAX_TIME;//设置时间恢复最大间隔时间
+        }
+        function getImgBlock(data) {
+            if(imgBlockList[data.id]) return imgBlockList[data.id]  // 若已经建立过 就直接返回
+            var imgBlock=document.createElement('div');
+            imgBlock.className='img-block';
+            // 正则把26/Jul/2022后面的/换成.
+            imgBlock.innerHTML=`
+                <img src='${data.img}'>
+                <div>
+                    <span><i>${data.date.split('/').shift()}</i>${data.date.match(/\/.*/)[0].replace(/\/(?=\d+)/,'.')}</span>
+                    <h1>${data.info}</h1>
+                </div>
+            `
+            imgBlockList[data.id]=imgBlock;  //key:1001 value:imgBlock
+            return imgBlock;
+        }
+        function clickHandler(e){
+            if(isPlaying) return;     // 正在播放 不可点击
+            if(!/left|right/.test(e.target.className) && e.target.nodeName!=="LI") return;
+            if(e.target.className==="left"){
+                direction=RIGHT;
+                if(--pos<0)pos=arr.length-1;   // 虽说是判断 但--是已经走完了的
+            }else if(e.target.className==="right"){
+                direction=LEFT;
+                if(++pos>arr.length-1) pos=0;
+            }else{
+                var index=Array.from(e.target.parentElement.children).indexOf(e.target);
+                if(pos===index) return;
+                direction= index>pos ? LEFT : RIGHT;
+                pos=index;
+            }
+            changePrev();
+            createNextImg();
+        }
+        function changePrev(){
+            if(prev) prev.style.backgroundColor="transparent";
+            prev=imgCon.nextElementSibling.children[pos];
+            prev.style.backgroundColor="red";
+        }
+        function createNextImg(){
+            if(direction===LEFT){
+                imgCon.appendChild(getImgBlock(arr[pos]));
+                x=0;
+            }else{
+                imgCon.insertBefore(getImgBlock(arr[pos]),imgCon.firstElementChild);
+                x=-imgCon.offsetWidth/2;
+            }
+            // 并且重新设置轮播容器位置
+            imgCon.style.left=x+"px";
+            isPlaying=true;
+        }
+        function animation(){
+            requestAnimationFrame(animation);
+            imgMove();
+            autoPlay();
+        }
+        function imgMove() {     //该函数为了实现图片切换时的效果
+            if(!isPlaying) return;
+            if(direction===LEFT){
+                x -= playSpeed;       //向左移  直至↓
+                if(x<= -imgCon.offsetWidth/2) {
+                    isPlaying=false;
+                    imgCon.firstElementChild.remove();
+                    x=0;
+                }
+            }else{
+                x += playSpeed;
+                if(x>=0){
+                    isPlaying=false;
+                    imgCon.lastElementChild.remove()
+                    x=0
+                }
+            }
+            imgCon.style.left=x+'px';  // 改变容器位置
+        }
+        function autoPlay() {
+            if(!isAuto || --time>0) return;  // 轮播开启 并且计时结束将进入下一条语句
+            time=MAX_TIME;
+            var evt = new MouseEvent('click',{bubbles:true}); // 向right按钮抛发点击事件 抛发事件是默认不冒泡的 所以设置为冒泡
+            imgCon.parentElement.lastElementChild.dispatchEvent(evt);
+        }
+    </script>
+</body>
+</html>
