@@ -1,0 +1,98 @@
+package.json里
+    'type': 'commonjs',     //说明nodejs的模块化方式  可以改成 module（即es6
+
+模块化格式
+    es6模块化    
+        导出模块的功能
+            为了获得模块的功能要做的第一件事是把它们导出来。使用export语句来完成。
+                export let name = 'Alan'    // 假设该模块名称为xx.js
+            如此,在需要的地方引入该模块(通常来说 只要是js的环境中)
+                import A from './xx.js'     // 这个A是给该功能(随便)起的名字
+                您仅能在引入进来的地方使用该模块
+                    console也无法获取这部分内容
+                    即便有些DevTools中可以获取到其内的语法错误,但debug依然是不可行的
+            当导出多个功能时 比如如下
+                export var obj{}
+                export function a(){}
+                export class A{}
+                export var arr=[]
+            为了方便 你可以这样转而这样写
+                export {obj,a,A,arr} from './xx.js'  // 这需要写在模块最末尾            
+            在引入时
+                import {obj,a,A,arr} from './xx.js'
+            这样写时 依然可以起名字 (可以防止名称相撞)
+                import {obj as obj1,a,A,arr} from './s.js'
+                在导出时也可以起名字 虽然通常不会这样做
+        在一些模块系统中会忽略扩展名(比如基于CommenJS、AMD、wp等的某些模块系统)
+        但es必须加.js后缀 即便是一个ts文件中
+
+        你只能在模块内部使用 import 和export 语句,而不是普通脚本文件
+            因为你导入了这些功能到你的脚本文件，你可以像定义在相同的文件中的一样去使用它。
+        当然 在内部脚本中(指一个html里的srcipt) 这样写
+            <script type='module'>
+            也将被视为模块部分
+
+        还可以让模块来提供默认功能
+            export default class { xxxxx类里的内容 } // 通常写在模块最末尾 
+            仅能提供一个功能,而非一组
+        你会发现该类是匿名的(虽然通常不会这样做)
+            函数也可以是匿名的
+        因为我们在导入时会起名字
+            import A from './xx.js'
+        注意
+            export default后面不能直接使用var
+        你应该
+            var obj={};  然后 export default obj;
+
+        混合导入
+            在模块中可以同时设置 export和export default
+            为此 导出时需要
+                import A,{obj,ab} from './xx.js'
+
+        创建模块对象
+            你可以导出所有可导出的内容,然后作为一个模块功能对象
+                import * as AA from './xx.js'
+            然后通过AA. 的方式调用
+
+        事实上 面向对象编程了都 我们导入导出类就完了
+
+        合并模块————这个功能似乎不太需要
+
+        动态加载模块是实在的功能
+            这使得不必预先加载所有模块,例如
+            squareBtn.addEventListener('click', () => {
+                import('./square.mjs')
+                .then((Module) => {
+                    let square1 = new Module.Square(myCanvas.ctx, myCanvas.listId, 50, 50, 100, 'blue');
+                    square1.draw();
+                    square1.reportArea();
+                    square1.reportPerimeter();
+                })
+            });
+
+        小知识
+            promise履行会返回一个模块对象
+
+
+    CommenJS模块化
+        最初的js模块规范 这使得js可以在浏览器外的任何地方运行 只要其符合CommenJS规范
+
+        modul.exprots = aa    等同于es6的 export default
+        调用时 
+            var Hangge = require('./hangge');
+
+        exports.变量名 不常用
+            exports.fn=
+            exports.arr=
+            exports.obj=
+        var {obj:obj1,arr,fn} = require('./a')
+
+    AMD模块化
+        commenjs是同步的 这使得前端需要异步(以免卡死)所以有了AMD模块化
+
+        c.js中
+            define(["./a"], function(obj) {return 导出内容}
+        Main.js
+            require(["./a","./b","./c"],function(obj,fn,{init}){ console.log(obj); fn(); init(); })
+        index中
+            <script src="./require.js" data-main="./js/main.js"></script>    // 这个main.js就是主入口了

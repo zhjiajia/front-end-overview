@@ -1,0 +1,125 @@
+/* SassScript
+* 请勿将中文写入注释
+* 多行注释将会填入css中 单行注释不会 */
+$a:50px;
+.div1{
+    width: $a;
+    height: calc($a/2 + 5px);
+    .divvv{ // 后代
+        left: 3px;
+    }
+    >div{   // 子代
+        left: 5px;
+    }
+    +p{ // 相邻兄弟
+        left: 3px;
+    }
+    &:hover{  // 父选择器 其实就是 div div:hover 
+        background-color: yellow;
+    }
+    >div1-1{//很少用 谁这么写代码
+        // border-left: 1px solid red;
+        border: {
+            left: {
+                color:red;
+                style:solid;
+                width:1px;
+            }
+        }
+    }
+}
+
+// 导入 
+// .div2{
+    // @import './b.scss';
+// }
+
+// 混合开发
+@mixin set-wh($w,$h,$color:red){
+    width: $w;
+    height: $h;
+    background-color: $color;
+}
+.div3{
+    @include set-wh(50px,50px,green)
+}
+// 常用的
+@mixin ulstyle() {
+    list-style:none;
+    margin: 0;
+    padding: 0;
+    li{
+        margin: 0;
+        padding: 0;
+        float: left;
+    }
+}
+
+//  继承
+.div4{
+    @extend .div3;
+}
+
+// 插值
+// 通过 #{} 插值语句可以在选择器或属性名中使用变量
+$c:abc;
+.div-#{$c} {
+    width: 50px;
+} // 效果为  .div-abc { width: 50px; }
+// 多数情况不如使用变量方便，但可避免Sass运行运算表达式
+p {
+    $font-size: 12px;
+    $line-height: 30px;
+    font: #{$font-size}/#{$line-height};
+  } // 效果为 p { font: 12px/30px; }
+
+
+// 判断 循环 数组和对象类型
+@mixin set-w($w) {
+    @if $w>200px {
+        $w:200px;
+    }@else if $w<100px {
+        $w:100px;
+    }
+}
+@for $i from 5 through 6 {
+    .div#{$i}{
+        width: 10px;
+    }
+}
+@each $color in red,blue,green{   //用,区分就是数组了
+    .div7-#{$color}{
+        width: 50px;
+        background-color: $color;
+    }
+}
+@each $key,$color in (a:red,b:green){  // 类似于对象
+    .div8-#{$key}{
+        width: 50px;
+        background-color: $color;
+    }
+}
+$j:1;
+@while $j<3 {
+    .div9-#{$j}{
+        width: 30px * $j;
+    }
+    $j:$j+1;
+}  // 这不能写++
+
+// 来个小实践
+.div10{
+    height: 500px;
+    border: 1px solid #000;
+    display: flex;
+    flex-flow: row nowrap;
+    align-items: baseline; //有趣的基线对齐
+    @each $key,$value,$p,$c in (1,300px,10px,red),(2,200px,5px,green),(3,400px,20px,blue),(4,230px,15px,yellow),(5,180px,30px,yellowgreen),(6,210px,40px,orange),(7,270px,28px,pink) {
+        div:nth-child(#{$key}){
+            width: 100px;
+            height: $value;
+            padding: $p;
+            background-color: $c;
+        }
+    }
+}

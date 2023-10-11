@@ -1,0 +1,669 @@
+1.    
+    var a:number=1
+    var a:Number=2
+    区别在于  
+        大写的 支持在堆中存储 
+        a=new Number(3) 这只在大写中可以
+    这样的还有 string boolean
+
+2.
+    var a:undefined;
+    var o:null;
+
+3.
+    var a:number|string = 3
+    var o:object|null = {a:1}
+    如果只给了o:object 那么意味着o不能被清空
+
+4.
+    var arr:number[] = [1,2,3]
+    var arr1:number[][] = [[1,2],[3,4]]
+    上面不好 应该如下
+    用泛型
+    var arr:Array<number> = [1,2,3]
+    var arr1:Array<Array<number>> = [[1,2],[3,4]]
+    下面的速度慢 不建议用  固定内容时应该用元祖
+    var arr2:Array<number|string> = [1,2,'a']
+    当然 动态的数组也没办法 只能这么写
+
+5.元组
+    var arr:[string,number,boolean] = ['a',1,true]
+
+6.枚举
+    enum COLOR{RED,GREEN,BLUE}
+    这么用: console.log(COLOR.RED) //结果为0
+    因为 枚举没有设定时 默认以0开始的下标
+    所以  (只支持数值和str)
+    enum COLOR{RED='red',GREEN='green'}
+
+7.any    慎用!
+    var a:any=3
+
+8.
+    function fn():number{    规定返回值类型
+    }
+    function fn():void{    当函数无return时
+    }
+    function fn():never{    永远不存在的类型
+        throw new Error()    // 这tm进来就报错 哪能成功返回。。
+    }
+9. 不建议在函数返回值之外声明void类型 没啥用
+10.接口前的预先知识
+    var o:object={a:1}
+        上面的写法 ts不知道这个object类型里面有什么 所以o.a会报错
+        再如 :Function 等 也是一样的
+    需要:
+        var o:{a:number}={a:1}
+    然而这只能定义一个对象o的类型 如果想通用 应该使用interface 参见:接口
+
+断言
+    1.
+        as 我说是就是 不是也得是 你ts判断时 就要认为是 当然 执行时报错就是另一回事了
+        例如下
+            class Box{ paly(){console.log('play')} }
+            class Ball extends Box{  run(){console.log('run')} }
+            var arr:Array<Box>=[];
+            arr.push(new Ball());      // Ball 也是Box 所以可以
+            arr.forEach((item:Box)=>{
+                item.run()         // 这将报错 Box上没有这个方法 所以断言
+                // (item as Ball).run();  
+                // (<Ball>item).run();   这种写法也可以 但是建议用as
+            })
+    2.见上 (<Ball>item).run() 行
+
+    应用
+        var div:HTMLDivElement = docuement.querySelector('div')  这样写很烦 ts报错 所以
+        var div:HTMLDivElement = docuement.querySelector('div') as HTMLDivElement
+
+接口
+    这叫(类型)接口 这和前后端通信那个通信接口不是一回事
+    接口将会声明(并检查)应有类型 
+    注意以下内容都是在接口内的前提下的
+
+    对象接口
+        两种方式 第二种更加常用
+        1.var o:{a:number,b:string}={a:1,b='1'}
+            然而这只能定义一个对象o的类型 
+        2.使用interface关键词定义接口
+            interface IObj{    // 我们约定 以I起头
+                a:number;
+                b:{
+                    c:number;
+                    d:Array<number>
+                }
+            }
+        使用
+            var o:IObj={a:1,b:{c:4,d:[1]}}
+    函数接口 
+        定义一个函数接口有以下几种方式
+        1.var fn:(a:number)=>void=function(a:number):void{}
+                    参数     返回值
+            之所以使用=> 是因为连续的冒号是不允许的,要用=>替代
+        2.interface IFn{
+            (a:number):void;
+          }
+          使用
+            var fn:IFn=function(a:number):void{}
+        3.var fn:Function
+            这种写法就像var o:object一样受限制,无法知道函数的参数和返回值
+        4.类中方法
+            假设有
+                interface IObj2={
+                    a:number;
+                    b:(a:number)=>void
+                }
+            那么可以这么写
+                interface IObj2={
+                    a:number;
+                    b(a:number):void
+                }
+                受限的条件是b 也就是说 必须函数是有名称的
+                    
+    可选 ?       (此条目不针对接口
+        可选元素
+            var obj:{a:number,b:number,c?:number}={a:1,b:2}
+            这表示c是可选的 与:number|undefined的区别在于
+            var obj:{a:number,b:number,c:number|undefined}={a:1,b:2} 
+            这会报错 因为压根就没c
+        可选属性
+            obj?.a
+        可选方法
+            interface IObj{
+                c?:()=>void;
+            }
+        可选参数
+            function fn(a:number,b?:number):void{}
+            注意  默认值参数可以写在可选参数的后面
+    readonly
+        表示该内容是只读的
+        interface Io{
+            readonly a:number;
+        }
+    ***至此 做个小练习
+        假设有
+            interface IObj{
+                readonly a:number;
+                b:Array<{a?:number,b?:number,c?:number}>;
+                c:{
+                    d(a:number,b?:number):number;
+                    e?:()=>void;
+                }
+            }
+        那么可以这样实现
+            var obj:IObj={
+                a:1,   // a属性必须只读
+                b:[{a:1,b:2},{b:3,c:4},{a:3,c:6}],
+                c:{
+                    d:function(a:number,b?:number){
+                        return a+1;
+                    },
+                    e:function(){}  // 这个属性可有可无
+                }
+            }
+        ***
+    可索引数据类型
+        现在有
+            var arr=[1,{a:1,b:2},3,4]
+            var arr:Array<number|{a:number,b:number}>=[1,{a:1,b:2},3,4]
+        现在要考虑的是
+        上面的写法只能专指数组 而想要通用所有可索引类型 应该如下
+            interface IArr{
+                [index:number]:{a:number,b:number}|number;
+            }   // index是随便起的 语义化罢了
+        有个问题需要注意
+            var arr:IArr=[1,2,3]
+            arr.length  // 这将报错 尽管arr是个数组 
+                但ts已经不认为其为数组了:
+                    类型“IArr”上不存在属性“length”
+        除了数字索引 还支持字符串索引
+            [index:string]
+        可以设置为只读
+            readonly [index: number]:number
+            arr[1]=2 // 这是不允许的
+        可以同时使用两种类型的索引，但是数字索引的返回值必须是字符串索引返回值类型的子类型。
+            这是因为当使用number来索引时,js会将它转换成str然后再去索引对象
+            也就是说用100（一个number）去索引等同于使用"100"（一个string）去索引，因此两者需要保持一致。
+    额外属性 (可索引数据类型的一种应用)
+        使用断言可以轻松的绕过ts的一些检查,但有时这些检查是必要的
+
+        来让{a:number} 变为更为宽松的{[key:string]:number}
+            var obj:{[key:string]:number}={}
+            或者换种书写方式
+            interface Io{
+                [key:string]:number;
+            }
+        现在就可以这样
+            obj.a=1
+            obj.b=23
+        当然 更通常的 我们这样写
+
+        但这造成了一个严重的问题
+            这约束了所有的属性名类型为string的内容 属性值必须为number
+        也就是说 额外属性是不能滥用的
+    一个类实现多个接口 用,隔开即可
+    一个借口继承多个接口 用,隔开即可
+    而一个类只能有一个超类
+    接口也是可以继承的
+        interface IA extends IB{
+        }
+    接口甚至可以继承类
+        class Box{
+            a:number=1
+        }
+        interface IA extends Box{
+            c:number;
+        }
+        class C implements IA{     // 见类接口
+            a:number=3;
+            c:number=4;
+        }
+    class接口
+        为什么类接口写在了较下面的地方? 因为哪来那么多事
+        现在有个普通的类
+            clae Box{
+                constructor(a:number){}
+                a:number=1;
+                paly():void{}
+                run(a:number):number{return a+this.a}
+            }
+            var b:Box=new Box()
+        显然的 类如果实现某个接口 就必须实现这个接口的内容
+            通过此性质,可以约束两个或两个以上的类具有相同的属性/方法
+            例如
+                interface IUpdate{
+                    update():void;
+                }
+                class A implements IUpdate{
+                    constructor(){}
+                    aa:number=1;
+                    update():void{}
+                }
+                class B implements IUpdate{
+                    constructor(){}
+                    update():void{}
+                }
+                显然可以
+                    var a:A=new A();
+                    var b:B=new B();
+                    var arr:Array<A|B>=[a,b]
+                并且可以
+                    var arr:Array<IUpdate>=[a,b]
+                也就是说 必然可以
+                    arr.forEach((i:IUpdate)=>i.update())
+        在interface中使用new
+            interface ID{
+                new (a:number):IUpdate;
+                这表示一个构造函数 参数为a 实例化出的对象为IUpdate类型
+            }
+            function fn(className:ID):IUpdate{
+                var d:IUpdate=new className(3);
+                return d;
+            }
+            fn(Box);   // 将类名作为参数填入
+            fn的作用就是  传入一个类 并返回该类的实例化对象
+    混合类型
+        有时候 我们想一个对象可以同时做为函数和对象使用，并带有额外的属性
+        在此之前 已知
+            interface IB{   (a:number):number;  }
+            var fn:IB=function(a:number):number{return a}
+        此时 我们加一个属性
+            interface IB{
+                (a:number):number;
+                a:number;
+            }
+        这时fn就会提醒缺少一个a属性 如何添加呢?
+            在底下补上 fn.a=1 无效
+        那尝试在外层套一个函数 其返回一个这样的IB类型
+            function fn():IB{
+                var f=function(a:number):number{return a;}
+                f.a=10
+                return f;
+            }
+        现在会报错 类型“(a: number) => number”上不存在属性“a”。
+            我们断言其为<IB> 
+                var f=<IB>function(a:number):number{return a;}
+            就不报错了 就能f.a=10了
+            可见f的类型为IB 所以
+                var f:IB=<IB>function(a:number):number{return a;}
+
+类
+    之前说过 es6那个类就是语法糖 这才叫类
+    来看一组修饰符
+                    public 公有的   protected 保护的    private 私有的
+        其实例化对象  可调用该属性/方法    不可                不可         public对外暴露
+        在当前类内       可                可                  可          
+        继承后的子类中    可               可                 不可         private仅当前类 子类不可
+            ts没有override关键词  完蛋玩意 但还是可以重写的
+        重写父类方法      可重写           可               都没给下来
+            
+        接口继承类时  应设置所有属性和方法都需要是公有的  要不这个类没办法本接口继承
+        同理 类在实现接口时  实现的内容必须使用public
+        在开发时
+            1.优先设定类中的属性和方法都是私有的
+            2.需要继承时 protected
+            3.暴露  public
+            就是说 上手就私有 需要再改
+    类中属性的类型
+        class Box{
+            private a:number;
+        }
+        这会报错 属性“a”没有初始化表达式，且未在构造函数中明确赋值。
+        因为 在new Box() 的时候 建立a属性 其类型会为undefined 这不符合number的预期
+
+        显然的两种方式解决
+            class Box{
+                private a:number=1;
+                private b:number;
+                constructor(_b:number){ this.b=_b }
+            }
+        甚至还有别的解决方式
+            private a:number|undefined; 
+            private a?:number;
+        也就是说 当属性设置类型并不包含undefined或者 并不是可选属性时
+            需要用上面两种解决方式
+
+    set、get、constructor
+        class Box{
+            private _step:number=1;
+            constructor(){   构造函数可以使用private和protected 以至于无法new 进而保证类不能实例化
+                构造函数不能设置返回值
+            }
+            // set 不可以设置返回值类型,参数必须有设置类型
+            public set step(vlaue:number){
+                this._step=vlaue;
+            }
+            // get 必须设置返回值类型
+            public get step():number{
+                return this._step;
+            }
+        }
+
+    静态属性和方法
+        静态属性可以不设置初始值 因为压根就不用实例化  
+        禁止在静态方法中使用this
+        class A{
+            private static a:number;
+            public static play():void{}
+        }
+
+    抽象类
+        abstract关键字是用于定义抽象类和在抽象类内部定义抽象方法/属性
+            有时 在抽象类中并不定义抽象属性/方法 其目的就是不让你实例化这个抽象类
+        abstract class A{
+            public a:number=1;     // 通常 我们不会往抽象类放这么个玩意
+            public abstract update():void;
+            public abstract b:number;
+        }
+        class B extends A{
+            public b:number=1;
+            public update():void{
+                console.log('aa')
+            }
+        }
+        再回来对比一下接口
+            interface A{  update():void; }
+            class B implements A{ update():void{} }
+        可见 抽象类中可以实现额外的一些内容的 比如那个a属性 而接口不行
+
+函数
+    大部分上面已经提到了 来看剩下的
+    剩余参数
+        function a(a:string,...b:Array<number>){}
+        a('1',1,2)
+        比较丑的写法: ...b:number[]
+    this
+        不同于js 当你在ts中需要用到this时 你需要写出this的指向类型 注意 这不是改变this指向
+        this需要放在第一个参数  // 这并不影响传参
+    重载  传入不同参数使用不同的同名函数
+        一个技巧
+            function fn(a:string,b:string):void;   // 声明  在ts写法上看起来像接口
+            function fn(a:number,b:number):void;
+            function fn(a:any,b:any):any{
+                if(typeof a==='string'){
+
+                }else if(typeof a==='number){
+
+                }
+            }
+            fn(1,2)
+            fn('a','b')
+        这样就可以根据传参的内容就可以走两个重载中的任意一个
+        
+泛型
+    <T>放在一个定义的后面 用以声明泛型  放在一个类型的前面 用以断言
+
+    现在有函数
+        function identity(arg: number): number {
+            return arg;
+        }
+    上面的函数只能接收number 返回number 我们希望普适
+    这样
+        function identity<T>(arg: T): T {    // T是随便起的
+            return arg;   ↑注意这里
+        }
+    T就相当于一个变量,在使用的时候 就可以这样
+        fn<number>(1)
+        fn<string>('a')
+    这样就实现了在使用时 检测到进入和返回的类型
+
+    之前我们有
+        var arr:Array<number> = [1,2,3]
+        显然这也是使用的泛型
+
+    再来看举几个例子
+        function fn<T>(arr:Array<T>){}
+        fn<number>([1,2,3])
+
+        var fn:<T>(a:T)=>void=function<T>(a:T){}
+        fn<number>(3)
+
+        箭头函数
+        var fn:<T>(a:T)=>void=<T>(a:T):void=>{}
+        fn<number>(3)
+
+        提出来 有两种方式
+            接口内泛型
+                interface IFn{
+                    <T>(a:T):void;
+                }
+                var fn:IFn=<T>(a:T):void=>{}
+                fn<number>(3)
+            接口外泛型
+                interface IFn<T>{
+                    (a:T):void;
+                }
+                var fn:IFn<number>=(a:number):void=>{}
+                fn(3)
+        显然 接口内泛型更加灵活 两种使用都很多
+        泛型类
+        class A<T>{
+            public a:T;
+            constructor(_a:T){ this.a=_a }
+        }
+        var b:Box<number>=new Box(3)
+        var c:Box<string>=new Box('3')
+
+    泛型约束  <T extends Ia>
+        来看例子
+        interface Ia{a:number}
+        interface Ib{b:number extends Ia}
+        function fn<T extends Ia>(a:T):void{}
+        那么这就要求 fn在实现上 T类型必须是继承了Ia类型的
+        fn<Ib>({a:1,b:2})
+        fn<Ia>({a:1})
+
+    泛型类类型
+        就是通过泛型 来实现给参数传入不同的类   净tm起绕嘴名字
+        class A{
+            public a:number=1;
+            public play():void{};
+        }
+        function fn<T>(className:{new ():T}):void{ 
+            // 就是说 className的类型是: new出来的结果是T类型
+            var a:T=new className();
+        }
+        fn<A>(A)
+        
+        在之前的class接口中提到了
+             function fn(className:ID):IUpdate 
+             用接口实现参数传入类名 
+        显然这种泛型的 这种 更加灵活
+枚举
+    1.使用枚举可以清晰地表达意图或创建一组有区别的用例。 TypeScript支持数字的和基于字符串的枚举。
+    2.当我们不在乎成员的值的时候,则值为0123的自增长 如第一个为5 则自增长678
+
+    3.interface、enum和 类class是平级的关系 所以enum不能直接写到class中
+        可以写在外面或者constructor之类的内部中
+
+    4.可以在enum里写 包括位运算(|将被视为位或)在内的表达式
+        例如 Read    = 1 << 1
+    举个例子
+        enum ShapeKind {  Circle, Square, }
+
+        interface Circle {
+            kind: ShapeKind.Circle;
+            radius: number;
+        }
+
+2.类型推论
+    在没有明确指出类型的地方  ts自己推断该变量的类型 并给出提醒
+
+    1.
+        let zoo = [new Rhino(), new Elephant(), new Snake()];
+        这里，我们想让zoo被推断为Animal[]类型，但是这个数组里没有对象是Animal类型的，因此不能推断出这个结果。
+        let zoo: Animal[] = [new Rhino(), new Elephant(), new Snake()];
+
+3.类型兼容性
+    TypeScript里的类型兼容性是基于结构子类型的.结构类型是一种只使用其成员来描述类型
+    的方式。它正好与名义(nominal)类型形成对比。
+    现存在
+        interface Named { name: string; }
+        class Person { name: string; }
+    那么这可以视为隐式的 class Person implements Named{}
+    那么这是被允许的:
+        let p: Named;
+        p = new Person();
+
+4.其它内容
+    1.交叉类型  就是取连个类型的并集
+        写法 : T & U
+    2.联合类型  就是  string|number        
+
+    3. 类型谓词 is 
+        function isNum(x: any): x is number {
+            return typeof x === "number";
+        }
+        这样写的原因是  如果写boolean 则ts会由于函数嵌套而不能进行正确的类型判断
+        is就像一个断言  不过讲道理 很少用 更通常的:
+        我们直接在需要的地方:
+                if (typeof padding === "number")  还要啥isNum
+    4.类型别名 type
+        type a =string;
+        type MouseEmitter = 'click'|'mousedown'|'mouseover'|'mouseenter'|'mouseleave'
+        var a:MouseEmitter;
+
+        emitter 发射器 随便起的 感觉怪怪的。。。。
+        js的提示也是用这个type做的 非常的人性化
+
+        类型别名也可以是泛型
+            type Tree<T> = {
+                value: T;
+                left: Tree<T>;
+                right: Tree<T>;   // 好家伙 二叉树
+            }
+
+            Array<number>原来是这么回事
+
+        类型别名看起来与接口很像 不过有些许差别
+            全凭感觉 不过直观的是:
+                1.type不可与 extends implements 交互
+                2.type 只是类型别名
+    5.字面量类型
+        举个应用的例子
+            type Easing = "ease-in" | "ease-out" | "ease-in-out";
+            class UIElement {
+                animate(dx: number, dy: number, easing: Easing) {
+                    if (easing === "ease-in") {
+                    }
+                    else if (easing === "ease-out") {
+                    }
+                    else if (easing === "ease-in-out") {
+                    }
+                    else {}
+                }
+            }
+
+            let button = new UIElement();
+            button.animate(0, 0, "ease-in");
+            button.animate(0, 0, "uneasy");
+    6.完整性检查
+        我们通常会留个兜底的default或者之类的
+        在上层改动时 下层往往随之修改
+        type Shape = Square | Rectangle | Circle | Triangle;
+        function area(s: Shape) {
+            switch (s.kind) {
+                case "square": return s.size * s.size;
+                case "rectangle": return s.height * s.width;
+                case "circle": return Math.PI * s.radius ** 2;
+                default: throw new Error("Unexpected object: " + s) // error here if there are missing cases
+            }
+        }
+    7.keyof 类型操作符的一个
+        interface Person {
+            name: string;
+            age: number;
+        }
+        let personProps: keyof Person;   
+        这等同于 'name' | 'age'
+    8. T[K] 比较骚的写法
+        function getProperty<T, K extends keyof T>(o: T, name: K): T[K] {
+            return o[name]; // o[name] is of type T[K]
+        }
+        let name: string = getProperty(person, 'name');
+        let age: number = getProperty(person, 'age');
+        let unknown = getProperty(person, 'unknown'); // error, 'unknown' is not in 'name' | 'age'
+    9.其余的一些
+        interface PersonPartial {
+            name?: string;
+            age?: number;
+        }
+        interface PersonReadonly {
+            readonly name: string;
+            readonly age: number;
+        }
+    10.等两年 玩熟了 重新看ts文档 的这块 
+        虽然它文档写的难看 当还是有用的
+5.Symbol
+    除了用户定义的symbols，还有一些已经众所周知的内置symbols。 
+        内置symbols用来表示语言内部的行为。
+    简单提几个
+        Symbol.hasInstance  有这个 就可以被instanceof运算符调用
+        凡是有iterator就可以被 for-of 调用  用他的话来说
+            方法，被for-of语句调用。返回对象的默认迭代器。
+        凡是有split
+            方法，被String.prototype.split调用。正则表达式来用分割字符串。
+        凡是有unscopables
+            对象，它自己拥有的属性会被with作用域排除在外
+
+    with作用域  es6不让用  之前学过 忘了。。。 复习一下
+
+
+命名空间
+    namespace namespaceA{
+        export class Box{
+            constructor(){}
+            public play(){}
+        }
+    }
+    namespace namespaceB {
+        export class Box{
+            constructor(){}
+            public play(){}
+        }
+    }
+    一些语句块  可以认为namespace定义了一个对象
+
+    var a:A.Box = new A.Box()
+
+    1.命名空间的好处是 
+        程序线上时 用命名空间a 开发时 用命名空间b 这样 就不用来回切换代码了
+
+    2.应用的方式通常是  我有两个内容相同的类 但执行的方式不一样
+        我可以分开来用
+    3.命名空间在使用模块时几乎没什么价值。因为模块也是有自己的域。
+    4.a.ts
+        namespace V
+        b.ts
+        namespace V
+        多文件共享一个命名空间
+        当涉及到多文件时，我们必须确保所有编译后的代码都被加载了。 我们有两种方式。
+        到时候再说   你会在这种情况遇见 --outFile 字样
+    4.--outFile 没跟上
+
+    外部命名空间
+        使用关键字declare namespace 
+    这块tm的乱七八糟的 再议
+
+装饰器
+    相比于Proxy 有点像 但只像一点点
+    使用时 tsconfig中必须把
+        experimentalDecorators  打开
+    装饰器是一种特殊类型的声明，它能够被附加到类声明，方法，访问符，属性或参数上
+    装饰器必须返回一个闭包
+    function ab(){
+        return fn(target:B,key:string,desc:PropertyDescriptor){
+            consoel.log(target,ket,desc) 打印之后 看到了内容 那么
+            就可以
+            desc.value() 就是method方法    
+            // target.paly()  跟上面差不多 反正都调到paly()了
+            // Reflect.apply()
+            也就是说 在实例化该类时   描述器会自动执行
+        }
+    }
+    class B{
+        @ab()
+        method(){
+            console.log('aa')
+        }
+    }
+三斜杠什么的都不说了 有空再说
