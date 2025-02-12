@@ -1,0 +1,215 @@
+<!-- 最近玩上了数独，就想着编程解决一下，这个是本地网页，即开即用，解决数度问题。 -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>数独游戏</title>
+    <style>
+      :root {
+        --board-color: #8c4000;
+        background-color: #dfffd0;
+      }
+      #app {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        height: 100vh;
+      }
+
+      .sudoku-container {
+        display: flex;
+        align-items: flex-start; /* 确保 sudobox 和按钮垂直对齐 */
+      }
+      #sudobox {
+        margin-top: 20px;
+        display: grid;
+        grid-template-columns: repeat(9, 30px);
+        grid-template-rows: repeat(9, 30px);
+        gap: 0px; /* 设置方格之间的间距 */
+        justify-content: center;
+      }
+      #biginBtn {
+        margin-top: 30px;
+        margin-left: 20px;
+        padding: 0px 1px;
+        font-size: 12px;
+        line-height: 12px;
+        cursor: pointer;
+      }
+      #resetBtn {
+        margin-top: 30px;
+        margin-left: 20px;
+        padding: 0px 1px;
+        font-size: 12px;
+        line-height: 12px;
+        cursor: pointer;
+      }
+      .cell {
+        width: 30px;
+        height: 30px;
+        background-color: #fff; /* 设置方格颜色 */
+        border: 1px solid var(--board-color);
+      }
+      /* 修建九宫样式 */
+      .cell:nth-child(3n + 1) {
+        border-left: 2px solid var(--board-color);
+      }
+      .cell:nth-child(9n) {
+        border-right: 2px solid var(--board-color);
+      }
+      .cell:nth-child(-n + 9) {
+        border-top: 2px solid var(--board-color);
+      }
+      .cell:nth-child(n + 28):nth-child(-n + 36) {
+        border-top: 2px solid var(--board-color);
+      }
+      .cell:nth-child(n + 55):nth-child(-n + 63) {
+        border-top: 2px solid var(--board-color);
+      }
+      .cell:nth-child(n + 72) {
+        border-bottom: 2px solid var(--board-color);
+      }
+      /* 被选中*/
+      .selected {
+        background-color: #ff7300 !important; /* 选中的单元格颜色 */
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+        <div class="ex" style="justify-content: center;">点击格子来填入数独题目然后点击求解即可。</div>
+      <div class="sudoku-container">
+        <div id="sudobox">
+          <div
+            v-for="(cell, index) in cells"
+            :key="index"
+            class="cell"
+            :class="{ selected: selectedIndex == index }"
+            @click="cellClick(index)"
+          >
+            {{ cell }}
+          </div>
+        </div>
+        <button id="biginBtn" @click="getResult">求解</button>
+        <button id="resetBtn" @click="reset">重置</button>
+      </div>
+    </div>
+
+    <script type="module">
+      import {
+        createApp,
+        ref,
+        onBeforeUnmount,
+      } from "https://unpkg.com/vue@3/dist/vue.esm-browser.js";
+
+      createApp({
+        setup() {
+          const cells = ref(new Array(81).fill(null)); // 创建一个包含81个元素的数组，每个元素代表一个方格
+
+          const selectedIndex = ref(null);
+          const cellClick = (index) => {
+            // 点击方格时，改变方格颜色，输入后恢复，未输入并且点击了其它地方则恢复
+            selectedIndex.value = index;
+            // alert(selectedIndex.value==index); // ture
+            document.addEventListener("keydown", handleClick);
+          };
+          const handleClick = (event) => {
+            const input = event.key;
+            if (input && /^[1-9]$/.test(input)) {
+              cells.value[selectedIndex.value] = input;
+              selectedIndex.value = null;
+              document.removeEventListener("keydown", handleClick);
+            } else {
+              alert("请输入有效的数字（1-9）");
+            }
+          };
+          const getResult = () => {
+            const board = Array.from({ length: 9 }, (_, i) =>
+              cells.value
+                .map((cell) => (cell === null ? 0 : cell))
+                .slice(i * 9, (i + 1) * 9)
+            );
+            const result = solveSudoku(board);
+            console.log(result);
+            if (!result) {
+              alert("无解");
+            } else {
+              cells.value = result.flat();
+            }
+          };
+          const solveSudoku = function (board) {
+            // 行、列、九宫不能重复
+            function isValid(row, col, val, board) {
+              let len = board.length;
+
+              for (let i = 0; i < len; i++) {
+                if (board[row][i] === val) {
+                  return false;
+                }
+              }
+
+              for (let i = 0; i < len; i++) {
+                if (board[i][col] === val) {
+                  return false;
+                }
+              }
+
+              let startRow = Math.floor(row / 3) * 3;
+              let startCol = Math.floor(col / 3) * 3;
+
+              for (let i = startRow; i < startRow + 3; i++) {
+                for (let j = startCol; j < startCol + 3; j++) {
+                  if (board[i][j] === val) {
+                    return false;
+                  }
+                }
+              }
+
+              return true;
+            }
+            // 回溯法 即 假设当前位合理，在此基础上递归(继续假设)，直到矛盾后返回，直到找到答案。
+            function backTracking() {
+              for (let i = 0; i < board.length; i++) {
+                for (let j = 0; j < board[0].length; j++) {
+                  if (board[i][j] != 0) continue;
+                  for (let val = 1; val <= 9; val++) {
+                    if (isValid(i, j, `${val}`, board)) {
+                      board[i][j] = `${val}`;
+                      if (backTracking()) {
+                        return true;
+                      }
+
+                      board[i][j] = 0;
+                    }
+                  }
+                  return false;
+                }
+              }
+              return true;
+            }
+            if (backTracking(board)) {
+              return board;
+            } else return false;
+          };
+          const reset = () => {
+            cells.value = new Array(81).fill(null);
+          };
+          onBeforeUnmount(() => {
+            if (keydownHandler) {
+              document.removeEventListener("keydown", keydownHandler);
+            }
+          });
+          return {
+            cells,
+            cellClick,
+            selectedIndex,
+            getResult,
+            reset,
+          };
+        },
+      }).mount("#app");
+    </script>
+  </body>
+</html>
